@@ -27,7 +27,7 @@ Prérequis : Git, Python 3.12 ou plus récent, Node.js 22.12 ou plus récent.
 ```bash
 cd backend
 python3 -m venv .venv
-source .venv/bin/activate              # Windows : .venv\Scripts\activate
+source .venv/bin/activate              # Windows : .venv\Scripts\activate (et py au lieu de python3)
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload
 ```
@@ -112,6 +112,12 @@ La configuration passe par des variables d'environnement (ou un fichier `backend
     ├── nginx.conf           configuration nginx pour servir le front dans un conteneur
     └── playwright.config.ts
 ```
+
+## Contribuer
+
+`main` est protégée : tout changement passe par une branche et une pull request. Les commits suivent [Conventional Commits](https://www.conventionalcommits.org/fr/) (`feat: ...`, `fix: ...`, `docs: ...`).
+
+Le détail (nommage des branches, format des commits, cycle d'une PR, versions) est dans [CONTRIBUTING.md](CONTRIBUTING.md). L'historique des versions est dans [CHANGELOG.md](CHANGELOG.md).
 
 ## Ce qu'il reste à faire
 
