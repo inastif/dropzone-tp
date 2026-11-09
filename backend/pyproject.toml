@@ -1,0 +1,25 @@
+[project]
+name = "dropzone-api"
+version = "0.1.0"
+description = "DropZone API: limited-edition sneaker drops"
+requires-python = ">=3.12"
+# Pinned dependencies live in requirements.txt and requirements-dev.txt.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify, naming
+select = ["E", "F", "I", "B", "UP", "SIM", "N"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dependencies are declared as default arguments.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=app --cov-report=term-missing --cov-fail-under=85"
+
+[tool.coverage.run]
+branch = true
