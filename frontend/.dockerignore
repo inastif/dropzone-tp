@@ -1,0 +1,11 @@
+# Rien de tout ça ne doit entrer dans l'image.
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+*.tsbuildinfo
+.env
+Dockerfile
+.dockerignore
