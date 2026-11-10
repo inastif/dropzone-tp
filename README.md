@@ -127,7 +127,9 @@ Sur Pages, il n'y a pas de nginx pour rediriger `/api` : le front appelle l'adre
 
 ### Publier une version
 
-Sur `main` à jour, après le merge de la PR :
+Avant le tag, dans la PR : mettre le nouveau numéro dans `backend/app/__init__.py`, `backend/pyproject.toml` et `frontend/package.json` (`npm version 0.2.1 --no-git-tag-version`), et ajouter la version au `CHANGELOG.md`.
+
+Puis, sur `main` à jour, après le merge de la PR :
 
 ```bash
 git switch main

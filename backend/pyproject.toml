@@ -1,6 +1,6 @@
 [project]
 name = "dropzone-api"
-version = "0.1.0"
+version = "0.2.1"
 description = "DropZone API: limited-edition sneaker drops"
 requires-python = ">=3.12"
 # Pinned dependencies live in requirements.txt and requirements-dev.txt.
