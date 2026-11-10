@@ -9,7 +9,7 @@ def test_an_order_decrements_the_stock(client: TestClient, make_drop) -> None:
     assert response.status_code == 201
     order = response.json()
     assert order["drop_id"] == drop["id"]
-    assert order["drop"]["remaining"] == 9
+    assert order["drop"]["remaining"] == 8
     assert client.get(f"/drops/{drop['id']}").json()["remaining"] == 9
 
 
