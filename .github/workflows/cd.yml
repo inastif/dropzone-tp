@@ -1,0 +1,56 @@
+name: CD
+
+# Une version se publie en posant un tag v* (par exemple v0.2.0) sur main.
+on:
+  push:
+    tags: ["v*"]
+
+# Aucun droit par défaut : chaque job reçoit seulement ce dont il a besoin.
+permissions: {}
+
+jobs:
+  images:
+    name: Image ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # lire le code
+      packages: write # publier l'image sur ghcr.io
+    # Un seul job, lancé deux fois : une fois pour l'API, une fois pour le front.
+    strategy:
+      matrix:
+        include:
+          - image: dropzone-api
+            context: backend
+          - image: dropzone-front
+            context: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Le jeton fourni par GitHub suffit : aucun mot de passe à créer.
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Calcule les tags de l'image à partir du tag Git : 0.2.0, 0.2 et sha-xxxxxxx.
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Réutilise les couches déjà construites lors des versions précédentes.
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
