@@ -1,0 +1,43 @@
+# Lance une version publiée, à partir des images de ghcr.io : rien n'est construit.
+# La version vient de la variable VERSION (dans .env ou dans la commande).
+# Lancement : docker compose -f compose.release.yml up -d
+# Retour arrière : changer VERSION puis relancer la même commande.
+
+name: dropzone-release
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    image: ghcr.io/inastif/dropzone-api:${VERSION:?indiquer la version, par exemple VERSION=0.2.0}
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  front:
+    image: ghcr.io/inastif/dropzone-front:${VERSION:?indiquer la version, par exemple VERSION=0.2.0}
+    ports:
+      - "${FRONT_PORT:-8080}:8080"
+    depends_on:
+      - api
+
+volumes:
+  db-data:
