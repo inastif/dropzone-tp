@@ -1,5 +1,7 @@
 # DropZone
 
+[![CI](https://github.com/inastif/dropzone-tp/actions/workflows/ci.yml/badge.svg)](https://github.com/inastif/dropzone-tp/actions/workflows/ci.yml)
+
 Plateforme de **drops** de sneakers en édition limitée : un drop met en vente un nombre fixe de paires à une heure précise, et les acheteurs commandent jusqu'à épuisement du stock.
 
 > Projet pédagogique (BTS SIO SLAM, cours « Introduction DevOps »). L'application fonctionne ; il lui manque tout ce qui permet de la livrer et de l'exploiter : conteneurs, intégration continue, déploiement, monitoring. C'est l'objet du TP. L'application n'a pas d'authentification.
@@ -91,6 +93,23 @@ npm run test:e2e          # Playwright : nécessite l'application complète sur 
 ```
 
 Les tests Playwright visent l'adresse `http://localhost:8080` (variable `E2E_BASE_URL` pour en viser une autre). Avant le premier lancement : `npx playwright install chromium`.
+
+## Intégration continue
+
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) tourne sur chaque pull request vers `main` et sur chaque push sur `main` :
+
+| Job | Contenu |
+|---|---|
+| Lint | Ruff (lint et format) pour l'API, ESLint et TypeScript pour le front |
+| Tests backend | pytest avec la couverture (minimum 85 %) |
+| Tests frontend | Vitest, puis le build de production |
+| E2E | seulement si les trois autres sont verts : stack Docker Compose et Playwright ; le rapport est gardé en artefact `playwright-report` |
+
+Pour tester un job en local avec [act](https://nektosact.com) (l'image du runner est réglée dans `.actrc`) :
+
+```bash
+act pull_request -j backend-tests
+```
 
 ## API
 

@@ -12,6 +12,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 - `compose.yml` : base PostgreSQL 16 avec volume et healthcheck, API et front.
 - `.env.example` : modèle des variables d'environnement.
 - Section « Lancer le projet avec Docker » dans le README.
+- Tests des commandes côté API (`test_orders.py`), test Vitest du composant `DropCard` et scénarios Playwright des commandes.
+- Workflow d'intégration continue (`ci.yml`) : lint, tests backend, tests frontend, puis E2E ; badge dans le README.
 
 ## [0.1.0] - 2026-11-09
 
