@@ -73,3 +73,33 @@ Les tests de `backend/tests/test_orders.py` : « la dernière paire rend le drop
 ### Qu'est-ce qu'act ne sait pas reproduire de GitHub ?
 
 act lance les jobs dans des conteneurs Docker sur le poste, pas sur les vraies machines de GitHub. Il ne reproduit pas tout : les images des runners sont plus légères, le cache et les artefacts ne marchent pas comme sur GitHub, le `GITHUB_TOKEN` et les secrets ne sont pas fournis, et les règles de protection de branche et les vérifications obligatoires n'existent pas en local.
+
+## Partie 4 — Déploiement continu
+
+### Pourquoi le CD ne relance-t-il pas les tests ? Qu'est-ce qui garantit que le commit tagué est sain ?
+
+Les tests ont déjà tourné : on ne pose un tag que sur `main`, et rien n'entre dans `main` sans passer par une pull request avec la CI verte (le ruleset l'exige). Le commit tagué a donc déjà été testé. Relancer les tests ferait perdre du temps sans rien apporter.
+
+### De quels droits chaque job a-t-il besoin ? Pourquoi les donner job par job plutôt qu'au workflow entier ?
+
+- Images : lire le code (`contents: read`) et publier un package (`packages: write`).
+- Pages : lire le code, publier sur Pages (`pages: write`) et prouver d'où vient le déploiement (`id-token: write`).
+- Release : créer la release (`contents: write`).
+
+En haut du workflow, `permissions: {}` ne donne rien par défaut. Chaque job n'a que ce dont il a besoin : si une action utilisée par un job est piégée, elle ne peut pas faire le travail des autres (par exemple, le job Pages ne peut pas modifier le dépôt).
+
+### Faut-il créer un mot de passe pour pousser sur ghcr.io depuis GitHub Actions ?
+
+Non. GitHub crée un jeton temporaire pour chaque run, `GITHUB_TOKEN`. Avec `packages: write`, il suffit pour se connecter à ghcr.io avec `docker/login-action`. Il n'y a aucun secret à créer ni à stocker.
+
+### Pages sert le site sous /dropzone-tp/ et non à la racine : quelle conséquence pour les chemins des fichiers du front ? Et pour une URL comme /drops/3 rechargée ?
+
+Par défaut, Vite écrit des chemins qui partent de la racine (`/assets/…`) : sur Pages, ils ne trouvent rien et la page reste blanche. On construit donc le front avec `--base=/dropzone-tp/`, et le routeur utilise la même base. Pour `/drops/3` rechargée, Pages ne connaît pas cette page et renvoie sa page 404 : on copie `index.html` en `404.html`, ce qui recharge l'application et laisse React afficher la bonne page.
+
+### Sur Pages, il n'y a pas de nginx pour rediriger /api : comment le front connaît-il l'adresse de l'API ? Que montre la page si aucune API publique n'existe ?
+
+L'adresse est fixée au moment du build avec `VITE_API_URL`, lue dans la variable de dépôt `PUBLIC_API_URL`. Sans API publique, la variable n'existe pas : le front vise une adresse qui ne répond pas, et la page affiche « L'API est injoignable ».
+
+### Un rollback, c'est reconstruire l'ancienne version ou réutiliser l'ancienne image ? Qu'est-ce qui ne revient pas en arrière ?
+
+On réutilise l'ancienne image, déjà publiée sur ghcr.io : on change `VERSION` et on relance Compose, sans aucun build. C'est rapide et on retrouve exactement ce qui tournait avant. Les données de la base, elles, ne reviennent pas en arrière : elles restent dans le volume. Si la nouvelle version avait changé le schéma de la base, l'ancienne version devrait encore savoir le lire.

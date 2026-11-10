@@ -1,0 +1,124 @@
+name: CD
+
+# Une version se publie en posant un tag v* (par exemple v0.2.0) sur main.
+on:
+  push:
+    tags: ["v*"]
+
+# Aucun droit par défaut : chaque job reçoit seulement ce dont il a besoin.
+permissions: {}
+
+jobs:
+  images:
+    name: Image ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # lire le code
+      packages: write # publier l'image sur ghcr.io
+    # Un seul job, lancé deux fois : une fois pour l'API, une fois pour le front.
+    strategy:
+      matrix:
+        include:
+          - image: dropzone-api
+            context: backend
+          - image: dropzone-front
+            context: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Le jeton fourni par GitHub suffit : aucun mot de passe à créer.
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Calcule les tags de l'image à partir du tag Git : 0.2.0, 0.2 et sha-xxxxxxx.
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Réutilise les couches déjà construites lors des versions précédentes.
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  pages:
+    name: GitHub Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # lire le code
+      pages: write # publier sur Pages
+      id-token: write # prouver à Pages que le déploiement vient bien de ce dépôt
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Donne le chemin du site sur Pages : /dropzone-tp
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - run: npm ci
+
+      # Le site vit sous /dropzone-tp/ : on le dit à Vite (option base).
+      # Sans API publique (variable PUBLIC_API_URL non définie), on vise une adresse
+      # qui n'existe pas (.invalid) : la page affiche « L'API est injoignable ».
+      - name: Build du front pour Pages
+        run: npm run build -- --base="${{ steps.pages.outputs.base_path }}/"
+        env:
+          VITE_API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.invalid' }}
+
+      # Pages n'a pas de nginx : une adresse comme /drops/3 rechargée donnerait une 404.
+      # Avec une copie de index.html en 404.html, c'est React qui affiche la bonne page.
+      - name: Page 404 pour les liens directs
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: frontend/dist
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  release:
+    name: Release
+    # Seulement quand les images et le site sont publiés.
+    needs: [images, pages]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # créer la release
+    steps:
+      # gh est déjà installé sur les machines de GitHub. Les notes sont générées
+      # à partir des pull requests mergées depuis la version précédente.
+      - name: Créer la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          --repo "$GITHUB_REPOSITORY"
+          --title "$GITHUB_REF_NAME"
+          --generate-notes
+          --verify-tag

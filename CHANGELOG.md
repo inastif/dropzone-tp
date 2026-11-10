@@ -6,6 +6,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 
 ## [Non publié]
 
+## [0.2.0] - 2026-11-10
+
 ### Ajouté
 
 - Images Docker de l'API (multi-stage, utilisateur non-root) et du front (build Node, service par nginx sur le port 8080).
@@ -14,6 +16,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 - Section « Lancer le projet avec Docker » dans le README.
 - Tests des commandes côté API (`test_orders.py`), test Vitest du composant `DropCard` et scénarios Playwright des commandes.
 - Workflow d'intégration continue (`ci.yml`) : lint, tests backend, tests frontend, puis E2E ; badge dans le README.
+- Workflow de déploiement continu (`cd.yml`), déclenché par un tag `v*` : images publiées sur ghcr.io, front publié sur GitHub Pages, release avec des notes générées.
+- `compose.release.yml` : lancer une version publiée à partir des images du registre, et revenir à la précédente.
+
+### Sécurité
+
+- Les jobs de la CI sont des vérifications obligatoires pour merger dans `main`.
 
 ## [0.1.0] - 2026-11-09
 
@@ -29,5 +37,6 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 
 - Branche `main` protégée : pull request obligatoire, push forcé et suppression interdits.
 
-[Non publié]: https://github.com/inastif/dropzone-tp/compare/v0.1.0...HEAD
+[Non publié]: https://github.com/inastif/dropzone-tp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/inastif/dropzone-tp/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/inastif/dropzone-tp/releases/tag/v0.1.0
