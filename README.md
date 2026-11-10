@@ -111,6 +111,56 @@ Pour tester un job en local avec [act](https://nektosact.com) (l'image du runner
 act pull_request -j backend-tests
 ```
 
+## Déploiement continu
+
+Le workflow [`.github/workflows/cd.yml`](.github/workflows/cd.yml) se lance quand on pousse un tag `v*` posé sur `main` :
+
+| Job | Contenu |
+|---|---|
+| Images | construit et publie `ghcr.io/inastif/dropzone-api` et `ghcr.io/inastif/dropzone-front`, avec les tags `0.2.0`, `0.2` et `sha-…` |
+| GitHub Pages | construit le front sous `/dropzone-tp/` et le publie sur <https://inastif.github.io/dropzone-tp/> |
+| Release | une fois les images et Pages publiées, crée la release GitHub avec des notes générées |
+
+Le CD ne relance pas les tests : un tag ne se pose que sur `main`, où rien n'entre sans une CI verte.
+
+Sur Pages, il n'y a pas de nginx pour rediriger `/api` : le front appelle l'adresse donnée par la variable de dépôt `PUBLIC_API_URL` (Settings → Secrets and variables → Actions → Variables). Sans API publique, la page affiche « L'API est injoignable ».
+
+### Publier une version
+
+Sur `main` à jour, après le merge de la PR :
+
+```bash
+git switch main
+git pull
+git tag -a v0.2.0 -m "v0.2.0"
+git push origin v0.2.0
+```
+
+### Lancer une version publiée
+
+[`compose.release.yml`](compose.release.yml) utilise les images de ghcr.io, sans rien construire. La version vient de la variable `VERSION` du fichier `.env` (sans le `v`) :
+
+```bash
+docker compose down
+docker compose -f compose.release.yml up -d
+docker compose -f compose.release.yml ps
+```
+
+`docker compose down` arrête d'abord la stack de développement, qui utilise les mêmes ports.
+
+### Revenir à la version précédente
+
+1. Dans `.env`, remettre l'ancienne version : `VERSION=0.2.0` au lieu de `VERSION=0.2.1`.
+2. Relancer la même commande :
+
+   ```bash
+   docker compose -f compose.release.yml up -d
+   ```
+
+Docker reprend l'ancienne image dans le registre : aucun build. `docker compose -f compose.release.yml ps` doit afficher les images de l'ancienne version.
+
+Ce qui ne revient pas en arrière : les données de la base (volume `db-data`). Si une version a modifié le schéma de la base, l'ancienne version doit rester compatible avec ce schéma.
+
 ## API
 
 | Requête | Réponse |
@@ -160,6 +210,7 @@ La configuration passe par des variables d'environnement (ou un fichier `backend
     ├── Dockerfile           image du front (build Node, puis nginx)
     └── playwright.config.ts
 compose.yml                  stack complète : db, api, front
+compose.release.yml          une version publiée, à partir des images de ghcr.io
 .env.example                 modèle des variables (copier en .env)
 ```
 
