@@ -18,6 +18,33 @@ Plateforme de **drops** de sneakers en édition limitée : un drop met en vente 
 | API (`backend/`) | Python 3.12, FastAPI, SQLAlchemy 2, SQLite en local ou PostgreSQL, pytest, Ruff |
 | Front (`frontend/`) | React 19, Vite, TypeScript, ESLint, Vitest + Testing Library, Playwright |
 
+## Lancer le projet avec Docker
+
+Prérequis : Docker avec Docker Compose. Rien d'autre à installer.
+
+```bash
+cp .env.example .env          # Windows PowerShell : Copy-Item .env.example .env
+docker compose up -d --build
+```
+
+| Service | Rôle | Adresse |
+|---|---|---|
+| `front` | front React servi par nginx | <http://localhost:8080> |
+| `api` | API FastAPI | <http://localhost:8000> (`/docs`, `/health/ready`) |
+| `db` | PostgreSQL 16 | pas de port publié, joignable par l'API sous le nom `db` |
+
+- Les variables (accès à la base, ports, logs) sont dans `.env`. Ce fichier n'est jamais commité ; `.env.example` sert de modèle.
+- Les données de la base sont dans le volume `db-data` : elles survivent à un arrêt de la stack.
+
+Commandes utiles :
+
+```bash
+docker compose ps             # état des services (db doit être healthy)
+docker compose logs -f api    # logs de l'API
+docker compose down           # arrêter la stack (les données sont gardées)
+docker compose down -v        # arrêter et supprimer les données
+```
+
 ## Lancer le projet en local (sans Docker)
 
 Prérequis : Git, Python 3.12 ou plus récent, Node.js 22.12 ou plus récent.
@@ -104,13 +131,17 @@ La configuration passe par des variables d'environnement (ou un fichier `backend
 ├── backend/                 API FastAPI
 │   ├── app/                 code (routes, services, domaine, modèles)
 │   ├── tests/               tests pytest (SQLite en mémoire)
+│   ├── Dockerfile           image de l'API (multi-stage, non-root)
 │   ├── pyproject.toml       configuration Ruff et pytest
 │   └── requirements*.txt    dépendances épinglées
 └── frontend/                application React
     ├── src/                 composants, pages et tests Vitest
     ├── e2e/                 tests Playwright
     ├── nginx.conf           configuration nginx pour servir le front dans un conteneur
+    ├── Dockerfile           image du front (build Node, puis nginx)
     └── playwright.config.ts
+compose.yml                  stack complète : db, api, front
+.env.example                 modèle des variables (copier en .env)
 ```
 
 ## Contribuer

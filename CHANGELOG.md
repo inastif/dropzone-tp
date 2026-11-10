@@ -6,6 +6,13 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le pr
 
 ## [Non publié]
 
+### Ajouté
+
+- Images Docker de l'API (multi-stage, utilisateur non-root) et du front (build Node, service par nginx sur le port 8080).
+- `compose.yml` : base PostgreSQL 16 avec volume et healthcheck, API et front.
+- `.env.example` : modèle des variables d'environnement.
+- Section « Lancer le projet avec Docker » dans le README.
+
 ## [0.1.0] - 2026-11-09
 
 ### Ajouté
